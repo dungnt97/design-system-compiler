@@ -256,8 +256,25 @@ Figma MCP asset URLs (`figma.com/api/mcp/asset/*`) expire after 7 days. NEVER le
 
 1. Create `public/assets/` directory
 2. Download each asset: `curl -sL -o public/assets/{filename} "{figma-url}"`
-3. Name descriptively: `icon-arrow.svg`, `logo-part-1.png`, etc.
+3. Name descriptively: `icon-arrow.svg`, `logo.svg`, etc.
 4. Replace all Figma URLs in code with local paths: `/assets/{filename}`
+
+### CRITICAL: Complex SVG Assets → Combine Into 1 File
+
+Figma MCP decomposes complex vector graphics (logos, illustrations) into many individual SVG parts (separate mask + gradient-fill files per path group). A single logo can produce **10+ SVG files**.
+
+**Detection**: 3+ asset URLs for one visual element, `mask-image` CSS patterns, nested `Clip path group` layers.
+
+**Solution**: Do NOT download parts individually. Instead:
+1. Download all parts, read their SVG contents
+2. Discard mask SVGs (identical shapes to gradient SVGs, just `fill="black"`)
+3. Combine all gradient-fill paths into **1 single SVG file** using nested `<svg>` elements for positioning
+4. Calculate positions from CSS margin percentages: `ml-[X%]` → `x = X% × cell-width`
+5. Apply vertical flip: `transform="translate(0, viewBox-height) scale(1, -1)"`
+6. Save as `public/assets/{name}.svg`, delete individual parts
+7. Component becomes a simple `<img src="/assets/{name}.svg" />` wrapper
+
+See `gen-component/SKILL.md` → "Complex SVG Components → Single Asset File" for full procedure.
 
 ## CRITICAL: Instance Dimensions vs Template Dimensions
 

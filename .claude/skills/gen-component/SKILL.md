@@ -37,7 +37,7 @@ For every image/SVG asset URL from Figma MCP (URLs matching `figma.com/api/mcp/a
 
 1. Create the directory `public/assets/` if it doesn't exist
 2. Download each asset using `curl -sL -o public/assets/{filename} {url}`
-3. Name files descriptively: `icon-arrow.svg`, `icon-eye-open.svg`, `logo-part-1.png`, etc.
+3. Name files descriptively: `icon-arrow.svg`, `icon-eye-open.svg`, `logo.svg`, etc.
 4. Replace all Figma MCP URLs in the component code with local paths: `/assets/{filename}`
 
 This is CRITICAL because Figma MCP asset URLs expire after 7 days. Local assets ensure the app works permanently.
@@ -50,6 +50,66 @@ curl -sL -o public/assets/icon-eye-open.svg "https://www.figma.com/api/mcp/asset
 # In code: use local path
 const imgIconEyeOpen = "/assets/icon-eye-open.svg";
 ```
+
+#### CRITICAL: Complex SVG Components → Single Asset File
+
+Figma MCP decomposes complex vector graphics (logos, illustrations, decorative icons) into many individual SVG parts — separate mask and gradient-fill files for each path group. This can produce **10+ SVG files for a single logo**. Do NOT download them individually.
+
+**Detection**: A component is a "complex SVG asset" if the `get_design_context` output has:
+- 3+ asset URLs (`figma.com/api/mcp/asset/*`) for a single visual element
+- CSS `mask-image` / `mask-alpha` patterns in the generated code
+- Deep nesting of `Clip path group` layers in the hierarchy
+- The component is visually a single image (logo, illustration, badge)
+
+**Correct approach — combine into 1 SVG**:
+
+1. Download ALL the individual SVG parts (both mask and gradient-fill variants)
+2. Read their contents — each pair has identical path shapes: the mask uses `fill="black"`, the image uses `fill="url(#gradient)"`
+3. Only the gradient-fill SVGs are needed (the masks are redundant since shapes are identical)
+4. Create a single combined SVG file that positions all gradient paths using nested `<svg>` elements:
+
+```svg
+<svg width="W" height="H" viewBox="0 0 W H" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Each part as a nested SVG with its position, size, viewBox, and flip transform -->
+  <svg x="{x}" y="{y}" width="{w}" height="{h}" viewBox="{original-viewBox}" overflow="visible">
+    <g transform="translate(0, {viewBox-height}) scale(1, -1)">
+      <path d="..." fill="url(#grad-id)"/>
+    </g>
+    <defs>
+      <linearGradient id="grad-id" ...>...</linearGradient>
+    </defs>
+  </svg>
+  <!-- ... more parts ... -->
+</svg>
+```
+
+5. Calculate positions from the CSS grid/margin percentages in the `get_design_context` output:
+   - `ml-[X%]` → `x = X% × grid-cell-width` (grid cell width = widest element's width)
+   - `mt-[Y%]` → `y = Y% × grid-cell-width` (CSS % margins resolve relative to inline-size/width)
+   - `-scale-y-100` → `transform="translate(0, viewBox-height) scale(1, -1)"` (vertical flip)
+6. Save as a single file: `public/assets/{component-name}.svg`
+7. Delete the individual part files
+
+**The component then becomes a simple `<img>` wrapper:**
+
+```tsx
+interface LogoProps {
+  className?: string;
+}
+
+export function Logo({ className }: LogoProps) {
+  return (
+    <div className={className ?? "relative size-[140px]"}>
+      <img src="/assets/logo.svg" alt="Logo" className="size-full" />
+      <p className="w-full text-center font-sans text-[9.69px] font-semibold uppercase leading-[14.194px] text-primary">
+        IOT Detect Old Person
+      </p>
+    </div>
+  );
+}
+```
+
+**Result**: 1 SVG file + simple component instead of 12+ SVG files + complex CSS mask code.
 
 ### Step 6: Generate Component
 

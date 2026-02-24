@@ -55,6 +55,7 @@ For each component in order, follow the **COMPLETE procedure** in `.claude/skill
 - [ ] Inner wrappers use `w-full`, not hardcoded pixel widths (e.g., `w-[327px]`)
 - [ ] No Figma MCP URLs (`figma.com/api/mcp/asset/*`) remain in code — all assets downloaded to `public/assets/`
 - [ ] Instance text containers don't use the template's fixed width — use `w-fit` or omit width
+- [ ] Complex SVG assets (logos, illustrations with 3+ asset URLs) are combined into a single SVG file, not downloaded as individual parts (see gen-component SKILL.md → "Complex SVG Components")
 
 **Verify:** All components in the generation order have been created and pass the checklist.
 

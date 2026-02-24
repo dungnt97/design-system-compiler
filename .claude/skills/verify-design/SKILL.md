@@ -93,6 +93,7 @@ For each component/page, verify against Figma:
 - [ ] No Figma MCP URLs (`figma.com/api/mcp/asset/*`) remain in any component or page code
 - [ ] All images/icons are downloaded to `public/assets/` and referenced as `/assets/{filename}`
 - [ ] SVG assets are saved as `.svg` files, raster images as `.png` or appropriate format
+- [ ] Complex SVG assets (logos, illustrations) are combined into a single SVG file — NOT stored as many individual mask/gradient part files
 
 #### Instance Dimensions
 - [ ] Reused component instances with different text content do NOT use the template's fixed width
