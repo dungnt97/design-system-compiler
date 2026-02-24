@@ -73,6 +73,31 @@ For each component/page, verify against Figma:
 - [ ] Grid configuration matches (columns, rows, gap)
 - [ ] Overflow behavior matches
 
+#### Frame & Width Fidelity (CRITICAL)
+- [ ] Page root div uses exact Figma frame pixel dimensions (e.g., `w-[375px] h-[812px]`), NOT `size-full` or `w-full`
+- [ ] Main container uses exact pixel positioning (`left-[Xpx] top-[Ypx]`) and dimensions (`w-[Wpx] h-[Hpx]`)
+- [ ] Full-width children use `w-full`, not a hardcoded pixel width repeating the parent
+- [ ] Full-width components (buttons, inputs spanning container) have `w-full` in their className
+- [ ] Component inner wrappers use `w-full`, not hardcoded widths like `w-[327px]`
+- [ ] App.tsx centers the page frame in the viewport (not stretching it)
+
+#### Semantic HTML (CRITICAL)
+- [ ] Input fields use `<input>` elements (not `<div><p>placeholder</p></div>`)
+- [ ] Buttons use `<button>` elements (not `<div><p>label</p></div>`)
+- [ ] Clickable text uses `<button>` or `<a>` elements (not `<div><p>text</p></div>`)
+- [ ] Input type attributes are correct (`email`, `password`, `tel`, `text`)
+- [ ] Placeholder text is in `placeholder` attribute, not in `<p>` tags
+- [ ] Interactive elements have focus styles (`focus:ring-2` or similar)
+
+#### Local Assets (CRITICAL)
+- [ ] No Figma MCP URLs (`figma.com/api/mcp/asset/*`) remain in any component or page code
+- [ ] All images/icons are downloaded to `public/assets/` and referenced as `/assets/{filename}`
+- [ ] SVG assets are saved as `.svg` files, raster images as `.png` or appropriate format
+
+#### Instance Dimensions
+- [ ] Reused component instances with different text content do NOT use the template's fixed width
+- [ ] Text containers in reused instances use `w-fit` or no explicit width (not template's hardcoded width)
+
 #### Structure
 - [ ] Layer hierarchy preserved
 - [ ] All elements present (no missing layers)
