@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/auto-format.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Self-check: Verify no hardcoded color/spacing values outside Tailwind classes, no structural simplification vs Figma, and all design tokens are referenced from @theme or arbitrary values.'"
+          }
+        ]
+      }
+    ]
+  }
+}
