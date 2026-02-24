@@ -39,6 +39,12 @@
   --text-body-xs-tall: 12px;
   --text-body-xs-tall--line-height: 20px;
 
+  --text-body-sm-bold: 14px;
+  --text-body-sm-bold--line-height: 24px;
+
   /* Border Radius */
   --radius-full: 24px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
 }
