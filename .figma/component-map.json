@@ -1,0 +1,125 @@
+{
+  "figmaFile": "VexBMENbhnWBOVwIqUGg1D",
+  "page": "Home",
+  "pageNodeId": "331:3504",
+  "frameDimensions": { "width": 375, "height": 1006 },
+  "components": {
+    "Logo": {
+      "nodeId": "328:2005",
+      "masterNodeId": "111:2923",
+      "category": "ui",
+      "description": "App logo with SVG graphic and text 'IOT Detect Old Person'",
+      "complexSvg": true,
+      "dependencies": []
+    },
+    "Title": {
+      "nodeId": "267:2758",
+      "category": "ui",
+      "description": "Heading + subtitle text block",
+      "props": { "heading": "string", "accordingText": "string" },
+      "dependencies": []
+    },
+    "Input": {
+      "nodeId": "119:3643",
+      "category": "ui",
+      "description": "Text input field with label, placeholder, helper text, and optional icons",
+      "dependencies": []
+    },
+    "Button": {
+      "nodeId": "328:2013",
+      "category": "ui",
+      "description": "Primary action button",
+      "props": { "label": "string" },
+      "dependencies": []
+    },
+    "HelperActionText": {
+      "nodeId": "371:1635",
+      "category": "ui",
+      "description": "Helper text with an action link",
+      "dependencies": []
+    },
+    "StatusBadge": {
+      "nodeId": "I355:2829;346:1517",
+      "category": "ui",
+      "description": "Green status dot with text label (Active/Safe) in colored background pill",
+      "props": {
+        "label": "string",
+        "size": "'sm' | 'md'"
+      },
+      "dependencies": []
+    },
+    "SectionTitle": {
+      "nodeId": "442:3307",
+      "category": "ui",
+      "description": "Section header with bold title and optional action text on the right",
+      "props": {
+        "title": "string",
+        "actionText": "string",
+        "onActionClick": "() => void"
+      },
+      "dependencies": []
+    },
+    "CardDevice": {
+      "nodeId": "355:2829",
+      "category": "patterns",
+      "description": "Device sensor card with icon, status badge, name, activity text, close state, and battery level",
+      "props": {
+        "icon": "string",
+        "name": "string",
+        "activeTime": "string",
+        "state": "string",
+        "batteryLevel": "string",
+        "batteryIcon": "string"
+      },
+      "dependencies": ["StatusBadge"]
+    },
+    "AlertCard": {
+      "nodeId": "461:2520",
+      "category": "patterns",
+      "description": "Alert notification card with icon, title, timestamp, description, and two action buttons",
+      "props": {
+        "icon": "string",
+        "title": "string",
+        "timestamp": "string",
+        "description": "string",
+        "secondaryButtonText": "string",
+        "primaryButtonText": "string"
+      },
+      "dependencies": []
+    },
+    "TabBar": {
+      "nodeId": "371:1604",
+      "category": "patterns",
+      "description": "Bottom navigation tab bar with 4 tabs (Home, Device, Profile, Setting). Active tab has circle highlight and darker text.",
+      "dependencies": [],
+      "multiStateVariants": {
+        "property": "State",
+        "values": [
+          { "name": "Home", "nodeId": "371:1604" },
+          { "name": "Device", "nodeId": "371:1604" },
+          { "name": "Profile", "nodeId": "371:1604" },
+          { "name": "Setting", "nodeId": "371:1604" }
+        ]
+      }
+    }
+  },
+  "generationOrder": [
+    "StatusBadge",
+    "SectionTitle",
+    "CardDevice",
+    "AlertCard",
+    "TabBar"
+  ],
+  "pages": [
+    {
+      "name": "SignUp",
+      "nodeId": "328:2001",
+      "dimensions": { "width": 375, "height": 812 }
+    },
+    {
+      "name": "Home",
+      "nodeId": "331:3504",
+      "dimensions": { "width": 375, "height": 1006 }
+    }
+  ]
+}
