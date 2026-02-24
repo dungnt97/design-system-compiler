@@ -129,6 +129,34 @@ export function Logo({ className }: LogoProps) {
 
 **Result**: 1 SVG file + simple component instead of 12+ SVG files + complex CSS mask code.
 
+#### CRITICAL: Proactive Icon Variant Detection (Silent Swap Prevention)
+
+Before relying on the md5 duplicate check below, proactively detect and download Icon variant assets from their **variant master nodes**. This prevents the **silent single-file variant swap bug** where MCP returns the same asset URL for different Icon variant overrides, resulting in only 1 file downloaded — making the md5 check blind (nothing to compare).
+
+**When to apply:** When `get_design_context` output for this component contains an `Icon` sub-component with a variant property (`typeIcon`, `type`, `icon`, etc.), OR when `.figma/component-map.json` has an `iconVariants` field for this component.
+
+**Procedure:**
+
+1. **Parse ALL unique Icon variant values** used across instances of this component on the page. Sources:
+   - `iconVariants` array in `.figma/component-map.json` (preferred — already resolved by `/component-map`)
+   - `get_design_context` output showing Icon instances with variant property overrides
+2. **For EACH unique variant value**, find the variant master node:
+   - Use `get_metadata` on the Icon component set to list all `<symbol>` children
+   - Match each variant by name (e.g., `Type icon=Door` → node ID `48:28266`)
+3. **Download each icon from its variant master node** using `get_design_context` on the master node (never trust instance asset URLs for Icon variant swaps):
+   ```bash
+   # For each unique variant:
+   curl -sL -o public/assets/icon-{variant-value}.svg "{asset-url-from-master-node}"
+   ```
+4. **Run the mandatory SVG `preserveAspectRatio` fix** on all downloaded icons
+5. **Verify** all expected icon files exist and have distinct content:
+   ```bash
+   ls -la public/assets/icon-*.svg  # confirm all expected files exist
+   md5 -q public/assets/icon-*.svg | sort | uniq -d  # confirm no duplicates
+   ```
+
+This step runs **before** the md5 check below, making the md5 check a safety net rather than the primary detection mechanism.
+
 #### CRITICAL: Verify Icon Assets After Download (Icon Variant Swap Bug)
 
 Figma MCP has a known bug: when a component uses an `Icon` component with a `typeIcon` variant property swap (e.g., bell → home), `get_design_context` exports the **default variant's SVG** (bell) instead of the overridden variant (home). Different asset UUIDs are returned but they all download to the **same SVG file**.

@@ -99,6 +99,7 @@ For each component/page, verify against Figma:
 - [ ] Run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — command produces NO output (all icons are unique)
 - [ ] If duplicates found: Figma MCP variant swap bug — assets were exported from the default variant instead of the overridden variant. Fix by calling `get_design_context` on the Icon component's **variant master nodes** (e.g., `Type icon=Home` node) instead of the instance nodes, then re-download
 - [ ] Visually compare each icon in the browser against the Figma screenshot to confirm correctness
+- [ ] When the same component appears 2+ times on the page with different icons visible in the Figma screenshot, verify each instance's icon prop in the code points to a DIFFERENT asset file. Same file = silent variant swap bug.
 
 #### Instance Dimensions
 - [ ] Reused component instances with different text content do NOT use the template's fixed width

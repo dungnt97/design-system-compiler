@@ -59,6 +59,7 @@ For each component in order, follow the **COMPLETE procedure** in `.claude/skill
 - [ ] Complex SVG assets (logos, illustrations with 3+ asset URLs) are combined into a single SVG file, not downloaded as individual parts (see gen-component SKILL.md → "Complex SVG Components")
 - [ ] After combining complex SVGs, ALL individual part files (`*-mask-*.svg`, `*-fill-*.svg`) have been deleted from `public/assets/` — run `ls public/assets/` to confirm only combined files remain
 - [ ] **Icon Variant Swap Bug check**: After downloading 2+ icon SVGs, run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — if ANY output, icons are duplicated due to the MCP variant swap bug. Fix by fetching assets from **variant master nodes** instead of instances (see gen-component SKILL.md → "Verify Icon Assets After Download")
+- [ ] **Silent Icon Variant Swap check**: Components containing Icon subcomponents with variant overrides (typeIcon, etc.) have EACH distinct variant downloaded as a separate file from its variant master node — even if MCP returned the same asset URL for all variants. Check: each instance's icon prop points to a different file.
 - [ ] **Multi-state variant assets**: Components with `multiStateVariants` in the component map have ALL variant-specific assets downloaded (one per variant, named `{component}-{variant-value}.svg`)
 - [ ] **Multi-state variant prop + callback**: Components with `multiStateVariants` define a variant prop and a callback prop (e.g., `activeState: VariantKey`, `onStateChange: (state: VariantKey) => void`) in their interface
 - [ ] **Multi-state asset map**: Components with variant-specific assets use a `Record<VariantKey, string>` to switch assets based on the variant prop
@@ -83,6 +84,7 @@ For each page frame, follow the **COMPLETE procedure** in `.claude/skills/gen-pa
 - [ ] No Figma MCP URLs remain in code — all assets downloaded to `public/assets/`
 - [ ] Instance text containers don't use the template's fixed width
 - [ ] **Icon Variant Swap Bug check**: Run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — no output means all icons are unique. If duplicates found, fix via variant master nodes before proceeding
+- [ ] **Cross-instance icon verification**: When the same component is used 2+ times with different expected icons (e.g., CardDevice for "door" and "fridge"), verify each instance's icon prop references a distinct asset file. If both point to the same file, the variant swap bug was missed.
 - [ ] **Stateful component wiring**: Pages using multi-state components (those with `multiStateVariants` in component map) import `useState` from React
 - [ ] **State initialization**: State is initialized with the Figma page instance's variant value (e.g., `useState<VariantKey>("{value}")` matching the variant shown on the page)
 - [ ] **State + callback props**: State variable and setter callback are passed as props to the multi-state component (e.g., `<Component activeState={state} onStateChange={setState} />`)

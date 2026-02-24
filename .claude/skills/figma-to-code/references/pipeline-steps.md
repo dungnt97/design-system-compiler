@@ -318,6 +318,34 @@ get_design_context(nodeId="{variant-master-node-id}")  → imgIcon downloads as 
 
 This workaround is required for **any** component that uses variant property swaps to change nested vector/icon content.
 
+### Silent Single-File Variant Swap (md5 Blind Spot)
+
+The md5 duplicate detection (`md5 -q public/assets/icon-*.svg | sort | uniq -d`) has a blind spot: it only catches duplicates when 2+ files exist with identical content. It **misses** the case where MCP returns the **same asset URL** for different Icon variant overrides, causing the pipeline to download only **1 file** instead of N.
+
+**Example scenario:**
+- `CardDevice` is used twice on a page: once with `typeIcon=Door`, once with `typeIcon=fridge`
+- MCP `get_design_context` returns the same asset URL for both instances (the default variant's URL)
+- The pipeline downloads 1 file (`icon-door.svg`) and uses it for both cards
+- Since there's no second file, `md5 | uniq -d` has nothing to compare → passes silently
+- Result: both cards show the door icon instead of door + fridge
+
+**Detection — Proactive (before download):**
+1. Parse Icon variant names from `get_design_context` output or `iconVariants` in component-map.json
+2. Count unique Icon variant values expected vs files actually downloaded
+3. If expected > downloaded → silent swap occurred
+
+**Detection — Reactive (after page generation):**
+1. Check if the same component is used 2+ times on the page with different icon prop values expected
+2. If 2+ instances point to the same file but the Figma screenshot shows different icons → silent swap
+
+**Fix:** Always download Icon assets from **variant master nodes**, not from instance context:
+1. Find the Icon component set via `get_metadata`
+2. For each unique variant value, get the variant master node ID
+3. Call `get_design_context` on each master node — the asset URL from this response resolves correctly
+4. Download and name each file based on the variant value: `icon-{variant-value}.svg`
+
+This approach makes the md5 check a **safety net** rather than the primary detection mechanism. The proactive detection in `/component-map` (`iconVariants` field) and `/gen-component` (variant master node download) prevents the bug before it occurs.
+
 ## CRITICAL: Component Variant State Management
 
 Some Figma components have multiple state variants (e.g., a navigation bar with `State=Tab1`, `State=Tab2`, `State=Tab3`). Each variant may have different backgrounds, icon positions, text colors, or other visual differences. These are NOT simple styling variants (like `Primary`/`Secondary` buttons) — they represent **runtime states** that the user switches between.

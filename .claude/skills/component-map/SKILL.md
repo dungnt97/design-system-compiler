@@ -66,6 +66,34 @@ Components without multi-state variants should omit the `multiStateVariants` fie
 
 **Why this matters:** Multi-state components often have variant-specific assets (e.g., a different background SVG per tab) and require state management props (`activeTab`, `onTabChange`). Without detecting variants here, `/gen-component` will only generate for a single variant, missing assets and state logic.
 
+### Step 4b: Detect Icon Variant Overrides (Silent Swap Prevention)
+
+For each component analyzed in Step 2, check if it contains Icon sub-components with variant property overrides (e.g., `typeIcon=Door`, `typeIcon=fridge`). This catches a **silent** variant swap bug where MCP returns the same asset URL for different Icon overrides, resulting in only 1 file downloaded instead of N.
+
+**Detection procedure:**
+
+1. In the `get_design_context` output for each component, look for child instances of an `Icon` component with a variant property (e.g., `typeIcon`, `type`, `icon`)
+2. Scan ALL page instances of this component — collect every distinct Icon variant value used (e.g., component used twice: once with `typeIcon=Door`, once with `typeIcon=fridge`)
+3. For each distinct Icon variant value, find the **variant master node ID** from the Icon component set (use `get_metadata` on the Icon component set to list all `<symbol>` children, match by variant name)
+
+**Record in JSON output** — add an `iconVariants` field for each component that uses Icon variant overrides:
+
+```json
+{
+  "name": "CardDevice",
+  "figmaNodeId": "...",
+  "category": "patterns",
+  "iconVariants": [
+    { "prop": "typeIcon", "value": "Door", "masterNodeId": "48:28266" },
+    { "prop": "typeIcon", "value": "fridge", "masterNodeId": "370:1699" }
+  ]
+}
+```
+
+Components without Icon variant overrides should omit the `iconVariants` field entirely.
+
+**Why this matters:** The existing md5 duplicate check only catches the case where 2+ downloaded files have identical content. But if MCP returns the same URL for both variants, only 1 file is downloaded — the md5 check has nothing to compare and silently passes. Recording `iconVariants` here enables `/gen-component` to proactively download each variant from its master node.
+
 ### Step 5: Build Dependency Graph
 
 For each component, list:

@@ -229,6 +229,27 @@ If duplicates are found:
 
 **Do NOT proceed to Step 11 until all icon assets are verified unique.**
 
+#### CRITICAL: Cross-Instance Icon Prop Verification
+
+After placing component instances on the page, verify that components used multiple times with different icon-related props each point to a **distinct** local asset file. This catches the **silent variant swap bug** that the md5 check misses when only 1 file was downloaded.
+
+**When to apply:** The same component (e.g., `CardDevice`) is used 2+ times on the page with different expected icons (e.g., one for "door" and one for "fridge").
+
+**Verification procedure:**
+
+1. List all instances of each component on the page
+2. For each instance, check the icon-related prop value (e.g., `icon="/assets/icon-door.svg"` vs `icon="/assets/icon-fridge.svg"`)
+3. If 2+ instances reference the **same** icon file but the Figma screenshot shows **different** icons → the variant swap bug was NOT caught at gen-component time
+4. **Fix:** For each missing icon variant:
+   - Find the Icon component set via `get_metadata`
+   - Locate the variant master node matching the expected icon
+   - Call `get_design_context` on the variant master node to get the correct asset URL
+   - Download and save as the expected filename (e.g., `icon-fridge.svg`)
+   - Run the mandatory SVG `preserveAspectRatio` fix
+5. Update the component instances to reference the correct distinct asset files
+
+**Do NOT proceed to Step 11 until each component instance with a different expected icon points to a different asset file.**
+
 ### Step 11: Visual Verification
 
 Compare the generated page against the Figma screenshot section by section:
