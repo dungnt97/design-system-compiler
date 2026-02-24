@@ -54,9 +54,14 @@ For each component in order, follow the **COMPLETE procedure** in `.claude/skill
 - [ ] `<a>` elements have `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary`
 - [ ] Inner wrappers use `w-full`, not hardcoded pixel widths (e.g., `w-[327px]`)
 - [ ] No Figma MCP URLs (`figma.com/api/mcp/asset/*`) remain in code — all assets downloaded to `public/assets/`
+- [ ] **SVG `preserveAspectRatio` fix**: After downloading SVGs, run `sed` to replace `preserveAspectRatio="none"` with `"xMidYMid meet"` on ALL SVG files (prevents icon distortion)
 - [ ] Instance text containers don't use the template's fixed width — use `w-fit` or omit width
 - [ ] Complex SVG assets (logos, illustrations with 3+ asset URLs) are combined into a single SVG file, not downloaded as individual parts (see gen-component SKILL.md → "Complex SVG Components")
 - [ ] After combining complex SVGs, ALL individual part files (`*-mask-*.svg`, `*-fill-*.svg`) have been deleted from `public/assets/` — run `ls public/assets/` to confirm only combined files remain
+- [ ] **Icon Variant Swap Bug check**: After downloading 2+ icon SVGs, run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — if ANY output, icons are duplicated due to the MCP variant swap bug. Fix by fetching assets from **variant master nodes** instead of instances (see gen-component SKILL.md → "Verify Icon Assets After Download")
+- [ ] **Multi-state variant assets**: Components with `multiStateVariants` in the component map have ALL variant-specific assets downloaded (one per variant, named `{component}-{variant-value}.svg`)
+- [ ] **Multi-state variant prop + callback**: Components with `multiStateVariants` define a variant prop and a callback prop (e.g., `activeState: VariantKey`, `onStateChange: (state: VariantKey) => void`) in their interface
+- [ ] **Multi-state asset map**: Components with variant-specific assets use a `Record<VariantKey, string>` to switch assets based on the variant prop
 
 **Verify:** All components in the generation order have been created and pass the checklist.
 
@@ -77,6 +82,10 @@ For each page frame, follow the **COMPLETE procedure** in `.claude/skills/gen-pa
 - [ ] All interactive elements use semantic HTML (inputs as `<input>`, buttons as `<button>`, links as `<a>`)
 - [ ] No Figma MCP URLs remain in code — all assets downloaded to `public/assets/`
 - [ ] Instance text containers don't use the template's fixed width
+- [ ] **Icon Variant Swap Bug check**: Run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — no output means all icons are unique. If duplicates found, fix via variant master nodes before proceeding
+- [ ] **Stateful component wiring**: Pages using multi-state components (those with `multiStateVariants` in component map) import `useState` from React
+- [ ] **State initialization**: State is initialized with the Figma page instance's variant value (e.g., `useState<VariantKey>("{value}")` matching the variant shown on the page)
+- [ ] **State + callback props**: State variable and setter callback are passed as props to the multi-state component (e.g., `<Component activeState={state} onStateChange={setState} />`)
 
 **Verify:** All page frames have corresponding files in `src/pages/` and pass the checklist.
 
@@ -90,6 +99,7 @@ Follow the **COMPLETE checklist** in `.claude/skills/verify-design/SKILL.md` (do
    - **Semantic HTML (CRITICAL)**: inputs use `<input>`, buttons use `<button>`, correct `type` attributes, focus styles present, `cursor-pointer` on all interactive elements
    - **Frame & Width Fidelity (CRITICAL)**: page root has exact pixel dimensions, container has exact pixel positioning, children use `w-full`, components have `w-full` in className, App.tsx centers the page
    - **Local Assets (CRITICAL)**: no Figma MCP URLs remain, all assets downloaded locally
+   - **Icon Asset Uniqueness (CRITICAL)**: run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — any output means the MCP variant swap bug was not caught. Fix immediately via variant master nodes
    - **Instance Dimensions**: reused instances don't carry template's fixed width
 4. Also verify: Colors, Typography, Spacing, Border/Radius, Shadows, Layout, Structure, States
 

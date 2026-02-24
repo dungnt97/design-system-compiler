@@ -51,6 +51,20 @@ curl -sL -o public/assets/icon-eye-open.svg "https://www.figma.com/api/mcp/asset
 const imgIconEyeOpen = "/assets/icon-eye-open.svg";
 ```
 
+#### MANDATORY: Fix SVG `preserveAspectRatio` After Download
+
+Figma MCP exports ALL SVGs with `preserveAspectRatio="none"`, which causes icons to **stretch/distort** when the SVG viewBox aspect ratio doesn't match the container's aspect ratio (e.g., a 20×19 SVG in a 24×24 container).
+
+**After downloading ANY SVG assets, immediately run:**
+
+```bash
+for f in public/assets/*.svg; do
+  sed -i '' 's/preserveAspectRatio="none"/preserveAspectRatio="xMidYMid meet"/g' "$f"
+done
+```
+
+This changes the behavior from "stretch to fill, ignore ratio" to "scale uniformly, center within container". **Do NOT skip this step** — non-square icons (which are the majority) will be visibly distorted without it.
+
 #### CRITICAL: Complex SVG Components → Single Asset File
 
 Figma MCP decomposes complex vector graphics (logos, illustrations, decorative icons) into many individual SVG parts — separate mask and gradient-fill files for each path group. This can produce **10+ SVG files for a single logo**. Do NOT download them individually.
@@ -106,7 +120,7 @@ export function Logo({ className }: LogoProps) {
     <div className={className ?? "relative size-[140px]"}>
       <img src="/assets/logo.svg" alt="Logo" className="size-full" />
       <p className="w-full text-center font-sans text-[9.69px] font-semibold uppercase leading-[14.194px] text-primary">
-        IOT Detect Old Person
+        Brand Name
       </p>
     </div>
   );
@@ -114,6 +128,44 @@ export function Logo({ className }: LogoProps) {
 ```
 
 **Result**: 1 SVG file + simple component instead of 12+ SVG files + complex CSS mask code.
+
+#### CRITICAL: Verify Icon Assets After Download (Icon Variant Swap Bug)
+
+Figma MCP has a known bug: when a component uses an `Icon` component with a `typeIcon` variant property swap (e.g., bell → home), `get_design_context` exports the **default variant's SVG** (bell) instead of the overridden variant (home). Different asset UUIDs are returned but they all download to the **same SVG file**.
+
+**MANDATORY — After downloading 2+ icon SVGs, run this check:**
+
+```bash
+# Check if any icon files are identical
+md5 -q public/assets/icon-*.svg | sort | uniq -d
+```
+
+If the command produces ANY output, duplicate icons exist. Fix them:
+
+1. **Identify the affected icons** — compare the screenshot (correct) vs downloaded SVG (wrong)
+2. **Find the Icon component set** — use `get_metadata` on the page to find the `<frame>` or `<symbol>` containing all icon variants (look for names like `Type icon=Search`, `Type icon=Settings`, etc.)
+3. **Get the variant master node IDs** — each variant is a direct child of the component set frame
+4. **Call `get_design_context` on each variant master node** — NOT the instance. The variant master's asset URL returns the correct SVG
+5. **Download and overwrite** the broken icon files
+6. **Re-verify** with `md5` — all hashes must now be unique
+
+Example:
+```bash
+# Instance node → returns default variant icon (WRONG)
+# get_design_context(nodeId="{instance-node}") → default-icon.svg
+
+# Variant master node → returns correct icon (CORRECT)
+# get_design_context(nodeId="{variant-master-node}") → correct-icon.svg ✓
+
+# Download correct asset
+curl -sL -o public/assets/icon-{name}.svg "{correct-asset-url}"
+
+# Verify all icons are unique
+md5 -q public/assets/icon-*.svg | sort | uniq -d
+# (should produce no output)
+```
+
+**Do NOT proceed to Step 6 until all icon assets are verified unique.**
 
 ### Step 6: Generate Component
 
@@ -182,6 +234,98 @@ const variantStyles = {
 
 type Variant = keyof typeof variantStyles;
 ```
+
+### CRITICAL: Multi-State Component Variants
+
+When the component map (`.figma/component-map.json`) has a `multiStateVariants` field for this component, it means the component has multiple Figma variants that represent **runtime states** (e.g., tabs, toggles, accordions, segmented controls). Each variant may have different assets, element positions, or styles. You MUST generate a stateful component that handles all variants.
+
+#### Step 6a: Fetch ALL Variant Design Contexts
+
+Call `figma:get_design_context` + `figma:get_screenshot` on **each variant master node** listed in `multiStateVariants.values[]` — NOT just the page instance.
+
+```
+// Fetch each variant master node from multiStateVariants.values[]
+for each { name, nodeId } in multiStateVariants.values:
+  get_design_context(nodeId="{nodeId}")   // e.g., State={name}
+  get_screenshot(nodeId="{nodeId}")
+```
+
+#### Step 6b: Diff Variants — Identify What Changes
+
+Compare all variant design contexts and screenshots to identify differences:
+
+| Change type | Example | Implementation |
+|---|---|---|
+| Different asset URLs | Background SVG changes per tab | Download a separate asset per variant |
+| Different element position | Active indicator moves | Conditional positioning classes |
+| Different element visibility | Icon highlighted/dimmed | Conditional opacity/color classes |
+| Different text colors/styles | Active tab label is bold | Conditional text classes |
+
+#### Step 6c: Download Variant-Specific Assets
+
+When variants have different assets (e.g., different background SVGs), download one per variant with a naming convention:
+
+```bash
+# Naming convention: {component-name}-{variant-value}.svg
+curl -sL -o public/assets/{component}-{value1}.svg "{url-from-variant-1}"
+curl -sL -o public/assets/{component}-{value2}.svg "{url-from-variant-2}"
+curl -sL -o public/assets/{component}-{value3}.svg "{url-from-variant-3}"
+```
+
+Then run the mandatory SVG `preserveAspectRatio` fix on all downloaded assets.
+
+#### Step 6d: Generate with Variant Prop + Callback
+
+Create:
+1. A **type union** from variant values (e.g., `type VariantKey = "Value1" | "Value2" | "Value3"`)
+2. A **variant prop** matching the property name (e.g., `activeState: VariantKey`)
+3. A **callback prop** for state changes (e.g., `onStateChange: (state: VariantKey) => void`)
+4. An **asset map** (`Record<VariantKey, string>`) for variant-specific assets
+
+```tsx
+// Type union derived from multiStateVariants.values[].name
+type VariantKey = "Value1" | "Value2" | "Value3";
+
+// Asset map — one entry per variant (only if variants have different assets)
+const bgMap: Record<VariantKey, string> = {
+  Value1: "/assets/{component}-value1.svg",
+  Value2: "/assets/{component}-value2.svg",
+  Value3: "/assets/{component}-value3.svg",
+};
+
+interface ComponentProps {
+  activeState: VariantKey;
+  onStateChange: (state: VariantKey) => void;
+  className?: string;
+}
+
+export function Component({ activeState, onStateChange, className }: ComponentProps) {
+  return (
+    <div className={className ?? "..."}>
+      <img src={bgMap[activeState]} alt="" className="..." />
+      {/* Elements with conditional styles based on activeState */}
+    </div>
+  );
+}
+```
+
+#### Step 6e: Implement Conditional Rendering for Differences
+
+For each difference found in Step 6b:
+- **Different positions**: Use conditional absolute positioning or transforms
+- **Different visibility/styles**: Use ternary expressions in className
+- **Different content**: Use conditional rendering (`{activeTab === "Home" && ...}`)
+
+```tsx
+// Conditional active styling example
+<button
+  type="button"
+  className={`cursor-pointer ${activeState === "Value1" ? "text-primary" : "text-neutral-500"}`}
+  onClick={() => onStateChange("Value1")}
+>
+```
+
+**IMPORTANT**: Do NOT generate a static component that only renders one variant. All variants must be switchable via the variant prop.
 
 ### Step 7: Visual Verification
 

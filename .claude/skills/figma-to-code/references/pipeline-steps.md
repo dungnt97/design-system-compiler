@@ -257,7 +257,14 @@ Figma MCP asset URLs (`figma.com/api/mcp/asset/*`) expire after 7 days. NEVER le
 1. Create `public/assets/` directory
 2. Download each asset: `curl -sL -o public/assets/{filename} "{figma-url}"`
 3. Name descriptively: `icon-arrow.svg`, `logo.svg`, etc.
-4. Replace all Figma URLs in code with local paths: `/assets/{filename}`
+4. **MANDATORY — Fix `preserveAspectRatio` on ALL SVGs immediately after download:**
+   ```bash
+   for f in public/assets/*.svg; do
+     sed -i '' 's/preserveAspectRatio="none"/preserveAspectRatio="xMidYMid meet"/g' "$f"
+   done
+   ```
+   Figma MCP exports all SVGs with `preserveAspectRatio="none"` which stretches non-square icons to fill their container, causing visible distortion. Changing to `"xMidYMid meet"` scales uniformly and centers within the container.
+5. Replace all Figma URLs in code with local paths: `/assets/{filename}`
 
 ### CRITICAL: Complex SVG Assets → Combine Into 1 File
 
@@ -276,6 +283,152 @@ Figma MCP decomposes complex vector graphics (logos, illustrations) into many in
 8. Component becomes a simple `<img src="/assets/{name}.svg" />` wrapper
 
 See `gen-component/SKILL.md` → "Complex SVG Components → Single Asset File" for full procedure.
+
+## CRITICAL: Icon Variant Swap Asset Bug (Figma MCP Limitation)
+
+Figma MCP `get_design_context` correctly **renders screenshots** with the right icon variants, but **exports asset URLs** that resolve to the **component master's default variant** icon instead of the overridden variant. This happens when:
+
+- A component uses a generic wrapper (e.g., `Notification`) containing an `Icon` component
+- The `Icon` component has a variant property (e.g., `typeIcon`) that swaps the visual
+- The MCP resolves the inner vector node ID back to the **default variant** regardless of the override
+
+**Detection**: After downloading icon assets, verify they are distinct:
+```bash
+md5 -q public/assets/icon-*.svg   # all hashes should be different
+head -2 public/assets/icon-*.svg  # path data should differ
+```
+
+If multiple icons have identical content despite different Figma asset URLs, they are affected by this bug.
+
+**Workaround — Query Variant Master Nodes Directly**:
+
+1. **Identify the Icon component set** — use `get_metadata` to find the `<frame>` containing all `<symbol>` icon variants
+2. **Find the variant master node** — match the variant name (e.g., `Type icon=Search` → its node ID)
+3. **Call `get_design_context` on the variant master node** — the asset URL from this response will return the correct SVG
+4. **Download and replace** the broken asset files
+
+Example:
+```
+# Instance node returns bell icon (WRONG):
+get_design_context(nodeId="{instance-node-id}")  → imgIcon downloads as default-variant.svg
+
+# Variant master node returns correct icon (CORRECT):
+get_design_context(nodeId="{variant-master-node-id}")  → imgIcon downloads as correct-icon.svg
+```
+
+This workaround is required for **any** component that uses variant property swaps to change nested vector/icon content.
+
+## CRITICAL: Component Variant State Management
+
+Some Figma components have multiple state variants (e.g., a navigation bar with `State=Tab1`, `State=Tab2`, `State=Tab3`). Each variant may have different backgrounds, icon positions, text colors, or other visual differences. These are NOT simple styling variants (like `Primary`/`Secondary` buttons) — they represent **runtime states** that the user switches between.
+
+### How to Detect Multi-State Component Sets
+
+In `/component-map`, after classifying components:
+
+1. For each component instance on the page, find its **component set** (parent frame with `<symbol>` children)
+2. Parse variant names for a shared property axis: `State=Tab1`, `State=Tab2` → property: `State`
+3. If 2+ variants share a property axis AND the variants have **visual differences beyond just colors** (different assets, element positions, visibility), it's a multi-state component
+4. Record `multiStateVariants` in the component map JSON with the property name and all variant node IDs
+
+### Common Multi-State Patterns
+
+| Pattern | Example | Property Axis | What Changes Between Variants |
+|---|---|---|---|
+| Tab bar / Navigation | `State=Tab1/Tab2/Tab3` | `State` | Background SVG, active indicator position, icon highlight |
+| Toggle / Switch | `State=On/Off` | `State` | Track color, thumb position |
+| Accordion | `State=Expanded/Collapsed` | `State` | Content visibility, chevron rotation |
+| Segmented control | `Selected=Option1/Option2/Option3` | `Selected` | Active segment background, text weight |
+| Stepper / Progress | `Step=1/2/3/4` | `Step` | Active step indicator, completed step styles |
+
+### Pattern for Downloading Variant-Specific Assets
+
+When variants have different assets (e.g., a different background SVG per variant):
+
+```bash
+# Download one asset per variant: {component-name}-{variant-value}.svg
+curl -sL -o public/assets/{component}-{value1}.svg "{asset-url-from-variant-1}"
+curl -sL -o public/assets/{component}-{value2}.svg "{asset-url-from-variant-2}"
+curl -sL -o public/assets/{component}-{value3}.svg "{asset-url-from-variant-3}"
+
+# MANDATORY: Fix preserveAspectRatio on all SVGs
+for f in public/assets/*.svg; do
+  sed -i '' 's/preserveAspectRatio="none"/preserveAspectRatio="xMidYMid meet"/g' "$f"
+done
+```
+
+### Pattern for Generating Stateful Components
+
+```tsx
+// 1. Define type union from multiStateVariants.values[].name
+type VariantKey = "Value1" | "Value2" | "Value3";
+
+// 2. Asset map for variant-specific resources (only if variants have different assets)
+const bgMap: Record<VariantKey, string> = {
+  Value1: "/assets/{component}-value1.svg",
+  Value2: "/assets/{component}-value2.svg",
+  Value3: "/assets/{component}-value3.svg",
+};
+
+// 3. Props: variant value + callback
+interface ComponentProps {
+  activeState: VariantKey;
+  onStateChange: (state: VariantKey) => void;
+  className?: string;
+}
+
+// 4. Component switches rendering based on variant prop
+export function Component({ activeState, onStateChange, className }: ComponentProps) {
+  return (
+    <div className={className ?? "..."}>
+      <img src={bgMap[activeState]} alt="" className="..." />
+      {(["Value1", "Value2", "Value3"] as const).map((value) => (
+        <button
+          key={value}
+          type="button"
+          className={`cursor-pointer ${activeState === value ? "text-primary" : "text-neutral-500"}`}
+          onClick={() => onStateChange(value)}
+        >
+          {/* variant-specific content */}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### Pattern for Wiring State in Pages
+
+```tsx
+import { useState } from "react";
+import { Component, type VariantKey } from "@/components/patterns/Component";
+
+export function PageName() {
+  // Initialize with the variant shown on the Figma page instance
+  const [activeState, setActiveState] = useState<VariantKey>("{initial-value}");
+
+  return (
+    <div className="relative h-[{H}px] w-[{W}px] ...">
+      {/* ... page content ... */}
+      <Component activeState={activeState} onStateChange={setActiveState} className="..." />
+    </div>
+  );
+}
+```
+
+### Why This Matters
+
+Without multi-state variant handling:
+1. Only ONE variant's assets are downloaded (the page instance's variant)
+2. The component is generated as static (no state switching)
+3. Users see the correct initial state but can't interact (tabs don't switch, toggles don't toggle)
+4. Requires multiple rounds of manual debugging to fix
+
+With proper handling:
+1. ALL variant assets are downloaded during `/gen-component`
+2. The component accepts a variant prop and switches assets/styles
+3. The page wires `useState` + callback on first generation
+4. Works correctly on first run
 
 ## CRITICAL: Instance Dimensions vs Template Dimensions
 

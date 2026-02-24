@@ -123,6 +123,53 @@ Every direct child section of the container should use `w-full` to fill the cont
 | Absolute positioned elements | `relative` parent + `absolute` children |
 | Full-width component | Pass `w-full` in className prop |
 
+### CRITICAL: Stateful Component Wiring
+
+When a page uses a component that has `multiStateVariants` in `.figma/component-map.json`, the page MUST manage state for that component.
+
+**Detection rule:** After reading the component map in Step 3, check each component used on the page. If it has a `multiStateVariants` field, it requires state wiring.
+
+#### Wiring procedure:
+
+1. **Import `useState`** from React
+2. **Import the variant type** from the component (or define a matching type union inline)
+3. **Initialize state** with the variant value shown in the page's Figma instance (the variant that's currently displayed on the page)
+4. **Pass state + setter** as props to the component
+
+```tsx
+import { useState } from "react";
+import { MyComponent, type VariantKey } from "@/components/patterns/MyComponent";
+
+export function PageName() {
+  // Initialize with the variant shown on the Figma page instance
+  const [activeState, setActiveState] = useState<VariantKey>("{initial-variant-value}");
+
+  return (
+    <div className="relative h-[{H}px] w-[{W}px] ...">
+      {/* ... other page content ... */}
+      <MyComponent activeState={activeState} onStateChange={setActiveState} />
+    </div>
+  );
+}
+```
+
+#### How to determine the initial state value:
+
+- Check the component instance on the Figma page — its variant property value is the initial state
+- Example: If the page shows `BottomNav` with `State=Tab1`, then `useState<VariantKey>("Tab1")`
+- If unclear, use the **first** variant value from `multiStateVariants.values[]`
+
+#### Multiple stateful components on one page:
+
+Each multi-state component gets its own `useState` call. Name the state variables descriptively based on the component's `multiStateVariants.property` name:
+
+```tsx
+const [activeTab, setActiveTab] = useState<TabVariant>("{value}");
+const [toggleState, setToggleState] = useState<ToggleVariant>("{value}");
+```
+
+**IMPORTANT**: Without this wiring, multi-state components will render but won't be interactive — users can't switch tabs, toggle states, etc. This is the #1 cause of "component looks right but doesn't work" bugs.
+
 ### Step 7: Handle Missing Components
 
 If the page uses components that haven't been generated yet:
@@ -164,6 +211,23 @@ Verify that NO Figma MCP asset URLs (`figma.com/api/mcp/asset/*`) appear in the 
 ```bash
 curl -sL -o public/assets/{filename} "{figma-url}"
 ```
+
+#### MANDATORY: Verify Icon Asset Uniqueness
+
+After all assets are downloaded, check for the **Icon Variant Swap Bug** — Figma MCP may return identical SVGs for different icon variants (see `gen-component/SKILL.md` → "Verify Icon Assets After Download" for full explanation).
+
+```bash
+# Check for duplicate icon SVGs
+md5 -q public/assets/icon-*.svg | sort | uniq -d
+```
+
+If duplicates are found:
+1. Compare the Figma screenshot (shows correct icons) against the downloaded SVGs (may all be the same default variant)
+2. Find the Icon component set's variant master nodes via `get_metadata`
+3. Call `get_design_context` on each variant master node (NOT the instance) to get correct asset URLs
+4. Re-download and re-verify
+
+**Do NOT proceed to Step 11 until all icon assets are verified unique.**
 
 ### Step 11: Visual Verification
 

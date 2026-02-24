@@ -95,6 +95,11 @@ For each component/page, verify against Figma:
 - [ ] SVG assets are saved as `.svg` files, raster images as `.png` or appropriate format
 - [ ] Complex SVG assets (logos, illustrations) are combined into a single SVG file — NOT stored as many individual mask/gradient part files
 
+#### Icon Asset Uniqueness (CRITICAL)
+- [ ] Run `md5 -q public/assets/icon-*.svg | sort | uniq -d` — command produces NO output (all icons are unique)
+- [ ] If duplicates found: Figma MCP variant swap bug — assets were exported from the default variant instead of the overridden variant. Fix by calling `get_design_context` on the Icon component's **variant master nodes** (e.g., `Type icon=Home` node) instead of the instance nodes, then re-download
+- [ ] Visually compare each icon in the browser against the Figma screenshot to confirm correctness
+
 #### Instance Dimensions
 - [ ] Reused component instances with different text content do NOT use the template's fixed width
 - [ ] Text containers in reused instances use `w-fit` or no explicit width (not template's hardcoded width)
@@ -119,6 +124,15 @@ For each component/page, verify against Figma:
 - [ ] Active/pressed states match
 - [ ] Disabled states match
 - [ ] Focus states match
+
+#### Multi-State Component Variants (CRITICAL)
+- [ ] Components with `multiStateVariants` in `.figma/component-map.json` switch between ALL variants correctly via a prop (e.g., `activeTab`)
+- [ ] Each variant has its own downloaded assets — no shared assets that only match one variant (e.g., if a component has 4 states, there should be 4 variant-specific asset files, not 1)
+- [ ] Variant-specific asset map (`Record<VariantKey, string>`) exists and maps each variant to its correct asset
+- [ ] Pages using multi-state components have `useState` + callback wiring (e.g., `const [state, setState] = useState<VariantKey>("{initial}")`)
+- [ ] State is initialized with the Figma page instance's variant value (not hardcoded to the first variant unless that's what the page shows)
+- [ ] Switching variants via the callback prop doesn't break the UI layout (all variant assets render at the correct size/position)
+- [ ] Interactive elements within multi-state components (e.g., tab buttons) have `onClick` handlers that call the callback prop
 
 ### Step 5: Generate Report
 
