@@ -31,13 +31,46 @@ Categorize each component:
 - **`ui`** (atomic): No child component dependencies, or only depends on native elements. Examples: Button, Input, Badge, Avatar, Icon.
 - **`patterns`** (composite): Depends on other components. Examples: Card, Navbar, FormField, Modal, Dropdown.
 
-### Step 4: Detect Component Set Variants (Multi-State)
+### Step 4: Find Component Set Parents (MANDATORY for EVERY component instance)
 
-For each component instance found on the page, check if its **component set** (parent frame containing variant `<symbol>` children) has 2+ variants sharing a property axis (e.g., `State=Tab1`, `State=Tab2`, `State=Tab3`).
+For EVERY component instance found on the page, you MUST trace back to its **component set parent** (the frame in Figma's design system page that contains all variant `<symbol>` children). This is required to discover all variants, download all variant-specific assets, and correctly populate `multiStateVariants`.
+
+**CRITICAL: Page instances only show ONE variant. You CANNOT determine what other variants exist without finding the component set parent. Skipping this step guarantees missing assets and broken multi-state components.**
+
+**How to find the component set parent from a page instance:**
+
+1. Call `figma:get_metadata` on the **root page** (node `0:1`) to get the full file structure
+2. Search the output for `<frame>` elements whose `name` matches the component instance name (e.g., instance named "Tab bar" → find `<frame name="Tab bar">`)
+3. The correct frame is the one that contains `<symbol>` children (these are the variant master nodes)
+4. If there are multiple matching frames, the component set is the `<frame>` that directly contains `<symbol>` children (not the outer wrapper frame)
+
+**Example:**
+```
+Page instance: <instance id="371:1604" name="Tab bar" ... />
+
+Search file metadata for "Tab bar" → find:
+  <frame id="355:2670" name="Tab bar">           ← outer wrapper
+    <frame id="355:2583" name="Tab bar">          ← COMPONENT SET (has <symbol> children)
+      <symbol id="355:2579" name="State=Home" />  ← variant master node
+      <symbol id="355:2580" name="State=Device" />
+      <symbol id="355:2581" name="State=Profile" />
+      <symbol id="355:2582" name="State=Setting" />
+    </frame>
+  </frame>
+
+Component set node: 355:2583
+Variant master nodes: 355:2579, 355:2580, 355:2581, 355:2582
+```
+
+**Record the `componentSetId` in the JSON output for EVERY component** (not just multi-state ones). This makes it easy to go back to the component set later.
+
+### Step 4b: Detect Multi-State Variants
+
+After finding the component set parent (Step 4), check if it has 2+ variants sharing a property axis (e.g., `State=Tab1`, `State=Tab2`, `State=Tab3`).
 
 **Detection procedure:**
 
-1. Use `figma:get_metadata` on the component set node to list all child `<symbol>` variants
+1. From Step 4, you already have all `<symbol>` children of the component set
 2. Parse variant names for a shared property axis (e.g., `State=Home` → property: `State`, value: `Home`)
 3. If the component set has 2+ variants on the same property axis, this is a **multi-state component**
 

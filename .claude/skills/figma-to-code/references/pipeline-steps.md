@@ -350,11 +350,37 @@ This approach makes the md5 check a **safety net** rather than the primary detec
 
 Some Figma components have multiple state variants (e.g., a navigation bar with `State=Tab1`, `State=Tab2`, `State=Tab3`). Each variant may have different backgrounds, icon positions, text colors, or other visual differences. These are NOT simple styling variants (like `Primary`/`Secondary` buttons) — they represent **runtime states** that the user switches between.
 
+### MANDATORY: Find Component Set Parent BEFORE Generating Any Component
+
+**This step applies to EVERY component, not just multi-state ones.** A page instance only shows one variant. The component set parent reveals ALL variants and is the source of truth for the component's full behavior.
+
+**How to find the component set parent:**
+
+1. Call `figma:get_metadata` on the root page (`0:1`) to get the full file structure
+2. Search for a `<frame>` whose `name` matches the component instance name
+3. The correct frame is the one containing `<symbol>` children — these are variant master nodes
+4. Record the frame ID as `componentSetId` and each `<symbol>` ID as a variant master node
+
+**Example:**
+```
+Page instance: <instance id="371:1604" name="Tab bar" />
+
+File metadata search → find:
+  <frame id="355:2583" name="Tab bar">           ← COMPONENT SET
+    <symbol id="355:2579" name="State=Home" />    ← variant master
+    <symbol id="355:2580" name="State=Device" />  ← variant master
+    <symbol id="355:2581" name="State=Profile" /> ← variant master
+    <symbol id="355:2582" name="State=Setting" /> ← variant master
+  </frame>
+```
+
+**CRITICAL VERIFICATION:** After writing `multiStateVariants` to component-map.json, verify the node IDs are REAL variant master nodes (`<symbol>` IDs from the component set), NOT the page instance ID repeated. If all node IDs are identical, the component set was NOT found — go back and find it.
+
 ### How to Detect Multi-State Component Sets
 
-In `/component-map`, after classifying components:
+After finding the component set parent:
 
-1. For each component instance on the page, find its **component set** (parent frame with `<symbol>` children)
+1. You already have all `<symbol>` children of the component set from the step above
 2. Parse variant names for a shared property axis: `State=Tab1`, `State=Tab2` → property: `State`
 3. If 2+ variants share a property axis AND the variants have **visual differences beyond just colors** (different assets, element positions, visibility), it's a multi-state component
 4. Record `multiStateVariants` in the component map JSON with the property name and all variant node IDs

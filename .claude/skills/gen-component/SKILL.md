@@ -12,9 +12,27 @@ Generate a single React + TypeScript component with Tailwind CSS classes from a 
 
 ## Procedure
 
+### Step 0: Find Component Set Parent (MANDATORY — DO NOT SKIP)
+
+Before fetching ANY design context, you MUST find the **component set parent** of this component. This is the frame in Figma's design system that contains ALL variant `<symbol>` children. Without this step, you will only see one variant and miss variant-specific assets.
+
+**Procedure:**
+
+1. Check `.figma/component-map.json` for a `componentSetId` field on this component
+2. If `componentSetId` exists, call `figma:get_metadata` on it to get all `<symbol>` variant children
+3. If `componentSetId` does NOT exist:
+   a. Call `figma:get_metadata` on the root page (`0:1`)
+   b. Search for `<frame name="{ComponentName}">` that contains `<symbol>` children
+   c. These `<symbol>` children are the variant master nodes
+4. **Record all variant master node IDs** — you will need them in Step 1
+
+**Why this is mandatory:** Page instances only show ONE variant. The component set parent reveals ALL variants. If a component has 4 state variants with different background SVGs, you must fetch all 4 — not just the one shown on the page. Skipping this step is the #1 cause of missing assets and broken multi-state components.
+
 ### Step 1: Fetch Design Context
 
 Call `figma:get_design_context` with the provided Figma URL to get complete layout, style, and hierarchy information for the component.
+
+**IMPORTANT:** If Step 0 found multiple variant master nodes, you MUST call `figma:get_design_context` on EACH variant master node (not just the page instance). Compare the outputs to identify what changes between variants (different assets, positions, styles).
 
 ### Step 2: Fetch Screenshot
 

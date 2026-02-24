@@ -37,16 +37,20 @@ Run `/design-tokens` with the provided Figma URL.
 
 Run `/component-map` with the provided Figma URL.
 
-**Verify:** `.figma/component-map.json` exists and contains at least one component.
+**Verify:**
+1. `.figma/component-map.json` exists and contains at least one component
+2. **Every component has a `componentSetId`** — this proves the component set parent was found (not just the page instance)
+3. **Multi-state components have `multiStateVariants` with REAL variant master node IDs** — the node IDs must be `<symbol>` children of the component set, NOT the page instance ID repeated. If you see the same node ID for all variants, the component set parent was NOT found — go back and fix it.
 
 ### Step 3: Generate Components
 
 Read `.figma/component-map.json` and iterate through the `generationOrder` array.
 
 For each component in order, follow the **COMPLETE procedure** in `.claude/skills/gen-component/SKILL.md` (do NOT just call `/gen-component` — the sub-skill rules must be applied):
-1. Execute all steps from gen-component SKILL.md (fetch context, screenshot, tokens, download assets, generate, verify)
-2. Verify the generated file exists and compiles (`npx tsc --noEmit`)
-3. If compilation fails, fix the error before moving to the next component
+1. **Start with Step 0** (MANDATORY): Find the component set parent and list all variant master nodes BEFORE fetching any design context
+2. Execute all remaining steps from gen-component SKILL.md (fetch context for ALL variants, screenshot, tokens, download variant-specific assets, generate, verify)
+3. Verify the generated file exists and compiles (`npx tsc --noEmit`)
+4. If compilation fails, fix the error before moving to the next component
 
 **Post-generation checklist for EACH component** (fix before moving on):
 - [ ] `<button>` elements have `type="button"`, `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary`
