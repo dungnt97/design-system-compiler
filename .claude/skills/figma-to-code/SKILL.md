@@ -14,6 +14,19 @@ Full pipeline orchestrator that converts an entire Figma file into production Re
 
 Execute these steps in order. Each step must complete successfully before proceeding to the next.
 
+### Step 0: Load Generation Rules (MANDATORY PRE-FLIGHT)
+
+Before generating ANY code, READ these files into context:
+
+1. `.claude/skills/figma-to-code/references/pipeline-steps.md` — Width/dimension rules, semantic HTML rules, token resolution, interactive element attributes
+2. `.claude/skills/gen-component/SKILL.md` — Component generation procedure + all CRITICAL sections
+3. `.claude/skills/gen-page/SKILL.md` — Page generation procedure + frame dimensions, container positioning, w-full rules
+4. `.claude/skills/verify-design/SKILL.md` — Full verification checklist
+
+**These files contain CRITICAL rules for correct code generation. Skipping this step guarantees broken output** — buttons without `cursor-pointer`, inputs without correct `type`, pages using `size-full` instead of exact dimensions, hardcoded widths instead of `w-full`, and expired Figma asset URLs left in code.
+
+Do NOT proceed to Step 1 until all four files have been read.
+
 ### Step 1: Extract Design Tokens
 
 Run `/design-tokens` with the provided Figma URL.
@@ -30,26 +43,53 @@ Run `/component-map` with the provided Figma URL.
 
 Read `.figma/component-map.json` and iterate through the `generationOrder` array.
 
-For each component in order:
-1. Run `/gen-component` with the component's Figma URL
+For each component in order, follow the **COMPLETE procedure** in `.claude/skills/gen-component/SKILL.md` (do NOT just call `/gen-component` — the sub-skill rules must be applied):
+1. Execute all steps from gen-component SKILL.md (fetch context, screenshot, tokens, download assets, generate, verify)
 2. Verify the generated file exists and compiles (`npx tsc --noEmit`)
 3. If compilation fails, fix the error before moving to the next component
 
-**Verify:** All components in the generation order have been created.
+**Post-generation checklist for EACH component** (fix before moving on):
+- [ ] `<button>` elements have `type="button"`, `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary`
+- [ ] `<input>` elements have correct `type` attribute (email/password/tel/text) and `cursor-pointer`, `focus:outline-none focus:ring-0`
+- [ ] `<a>` elements have `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary`
+- [ ] Inner wrappers use `w-full`, not hardcoded pixel widths (e.g., `w-[327px]`)
+- [ ] No Figma MCP URLs (`figma.com/api/mcp/asset/*`) remain in code — all assets downloaded to `public/assets/`
+- [ ] Instance text containers don't use the template's fixed width — use `w-fit` or omit width
+
+**Verify:** All components in the generation order have been created and pass the checklist.
 
 ### Step 4: Generate Pages
 
 Call `figma:get_metadata` on the Figma file to identify all page-level frames.
 
-For each page frame:
-1. Run `/gen-page` with the page frame's Figma URL
+For each page frame, follow the **COMPLETE procedure** in `.claude/skills/gen-page/SKILL.md` (do NOT just call `/gen-page` — the sub-skill rules must be applied):
+1. Execute all steps from gen-page SKILL.md (fetch metadata, screenshot, read components, fetch design context per section, generate page, update App.tsx, semantic check, asset check, visual verify)
 2. Verify the generated file exists and compiles
 
-**Verify:** All page frames have corresponding files in `src/pages/`.
+**Post-generation checklist for EACH page** (fix before moving on):
+- [ ] Page root uses exact Figma frame pixel dimensions (e.g., `w-[375px] h-[812px]`), NOT `size-full`, `w-full`, or `min-h-screen`
+- [ ] Main container uses exact pixel positioning (`left-[Xpx] top-[Ypx]`) and exact dimensions (`w-[Wpx] h-[Hpx]`), NOT `left-1/2 -translate-x-1/2`
+- [ ] All children of the container use `w-full`, not the parent's pixel width repeated
+- [ ] Full-width components (buttons, inputs spanning the container) have `w-full` in their className prop
+- [ ] App.tsx wraps the page in a centered viewport container (`flex min-h-screen items-center justify-center bg-[#e5e5e5]`)
+- [ ] All interactive elements use semantic HTML (inputs as `<input>`, buttons as `<button>`, links as `<a>`)
+- [ ] No Figma MCP URLs remain in code — all assets downloaded to `public/assets/`
+- [ ] Instance text containers don't use the template's fixed width
+
+**Verify:** All page frames have corresponding files in `src/pages/` and pass the checklist.
 
 ### Step 5: Verify Design Fidelity
 
-Run `/verify-design` with the original Figma URL.
+Follow the **COMPLETE checklist** in `.claude/skills/verify-design/SKILL.md` (do NOT just call `/verify-design` — every checklist item must be explicitly checked):
+
+1. Fetch Figma screenshot and design context
+2. Read all generated code files
+3. Explicitly verify every item under these CRITICAL sections:
+   - **Semantic HTML (CRITICAL)**: inputs use `<input>`, buttons use `<button>`, correct `type` attributes, focus styles present, `cursor-pointer` on all interactive elements
+   - **Frame & Width Fidelity (CRITICAL)**: page root has exact pixel dimensions, container has exact pixel positioning, children use `w-full`, components have `w-full` in className, App.tsx centers the page
+   - **Local Assets (CRITICAL)**: no Figma MCP URLs remain, all assets downloaded locally
+   - **Instance Dimensions**: reused instances don't carry template's fixed width
+4. Also verify: Colors, Typography, Spacing, Border/Radius, Shadows, Layout, Structure, States
 
 Review the verification report:
 - If **PASS**: Proceed to Step 6

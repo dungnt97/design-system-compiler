@@ -98,6 +98,14 @@ For each component/page, verify against Figma:
 - [ ] Reused component instances with different text content do NOT use the template's fixed width
 - [ ] Text containers in reused instances use `w-fit` or no explicit width (not template's hardcoded width)
 
+#### Token Namespaces (CRITICAL)
+- [ ] `src/index.css` `@theme` block uses `--text-*` for font sizes (NOT `--font-size-*`)
+- [ ] `src/index.css` `@theme` block uses `--leading-*` for line heights (NOT `--line-height-*`)
+- [ ] `src/index.css` `@theme` block uses `--tracking-*` for letter spacing (NOT `--letter-spacing-*`)
+- [ ] `src/index.css` `@theme` block uses `--radius-*` for border radius (NOT `--border-radius-*`)
+- [ ] Every `--text-{name}` has a matching `--text-{name}--line-height` compound token
+- [ ] Build CSS output confirms custom token values override Tailwind defaults (not falling back to default sizes)
+
 #### Structure
 - [ ] Layer hierarchy preserved
 - [ ] All elements present (no missing layers)

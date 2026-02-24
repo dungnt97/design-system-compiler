@@ -41,6 +41,25 @@
     Summary Report
 ```
 
+## CRITICAL: Tailwind v4 `@theme` Variable Namespaces
+
+Tailwind v4 only recognizes specific CSS custom property prefixes. Wrong prefixes silently fall back to defaults — no error, no warning.
+
+| Token type | CORRECT prefix | WRONG (silently ignored) |
+|---|---|---|
+| Font size | `--text-*` | ~~`--font-size-*`~~ |
+| Line height | `--leading-*` | ~~`--line-height-*`~~ |
+| Letter spacing | `--tracking-*` | ~~`--letter-spacing-*`~~ |
+| Border radius | `--radius-*` | ~~`--border-radius-*`~~ |
+| Colors | `--color-*` | (correct) |
+| Font family | `--font-*` | (correct) |
+| Font weight | `--font-weight-*` | (correct) |
+| Spacing | `--spacing-*` | (correct) |
+
+Font sizes MUST include compound line-height: `--text-lg: 24px` + `--text-lg--line-height: 48px`
+
+See `.claude/skills/design-tokens/SKILL.md` for the full namespace reference.
+
 ## Token Resolution Order
 
 When generating Tailwind classes, resolve values in this order:
@@ -170,6 +189,64 @@ Detect the correct `type` attribute from placeholder/label text:
 - "Password" / "Confirm password" → `type="password"`
 - "Phone number" → `type="tel"`
 - Everything else → `type="text"`
+
+### Interactive Element Required Attributes
+
+Tailwind CSS v4 preflight removes browser default outlines and cursor styles. Without explicitly adding these back, interactive elements look and feel non-interactive. ALL interactive elements MUST include the attributes below.
+
+| Element | Required Attributes |
+|---|---|
+| `<button>` | `type="button"`, `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary` |
+| `<input>` | correct `type` attribute, `cursor-pointer`, `focus:outline-none focus:ring-0` |
+| `<a>` | `cursor-pointer`, `focus:outline-none focus:ring-2 focus:ring-primary` |
+
+**CORRECT — button with all required attributes:**
+```tsx
+<button
+  type="button"
+  className="flex w-full cursor-pointer items-center justify-center rounded-full bg-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+>
+  <span className="font-sans text-base font-medium text-white">Sign up</span>
+</button>
+```
+
+**WRONG — button missing cursor-pointer and focus styles (looks/feels non-interactive):**
+```tsx
+<button className="flex w-full items-center justify-center rounded-full bg-primary px-4 py-2">
+  <span className="font-sans text-base font-medium text-white">Sign up</span>
+</button>
+```
+
+**CORRECT — input with all required attributes:**
+```tsx
+<input
+  type="email"
+  placeholder="Email"
+  className="w-full cursor-pointer bg-transparent font-sans text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:ring-0"
+/>
+```
+
+**WRONG — input missing type, cursor, and focus styles:**
+```tsx
+<input
+  placeholder="Email"
+  className="w-full bg-transparent font-sans text-sm text-black placeholder:text-neutral-500"
+/>
+```
+
+**CORRECT — link with all required attributes:**
+```tsx
+<a href="#" className="cursor-pointer font-sans text-xs font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary">
+  Login
+</a>
+```
+
+**WRONG — link missing cursor and focus styles:**
+```tsx
+<a href="#" className="font-sans text-xs font-bold text-primary">
+  Login
+</a>
+```
 
 ## CRITICAL: Download All Figma Assets Locally
 
