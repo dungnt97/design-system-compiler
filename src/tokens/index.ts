@@ -4,12 +4,37 @@
  * Do not edit manually — re-run the skill to update.
  */
 
-// Colors — populated by /design-tokens
+// Colors
+export const colors = {
+  primary: "#0056B1",
+  primaryLight: "#EEF4FB",
+  white: "#FFFFFF",
+  black: "#000000",
+  neutral100: "#F8F8F9",
+  neutral200: "#F1F1F1",
+  neutral300: "#DCDCDC",
+  neutral400: "#C7C7C7",
+  neutral500: "#A6A5A5",
+  neutral600: "#858585",
+  neutral700: "#5C5C5C",
+  neutral800: "#212222",
+  success: "#217B2C",
+  successBg: "#EAFBEC",
+  danger: "#CB0101",
+} as const;
 
-// Typography — populated by /design-tokens
+// Typography
+export const typography = {
+  fontFamily: '"Montserrat", sans-serif',
+  h3: { fontSize: "24px", lineHeight: "48px", fontWeight: 700 },
+  bodyMd: { fontSize: "16px", lineHeight: "24px", fontWeight: 500 },
+  bodySm: { fontSize: "14px", lineHeight: "24px", fontWeight: 400 },
+  bodySmMedium: { fontSize: "14px", lineHeight: "24px", fontWeight: 500 },
+  bodyXs: { fontSize: "12px", lineHeight: "16px", fontWeight: 500 },
+  bodyXsBold: { fontSize: "12px", lineHeight: "20px", fontWeight: 700 },
+} as const;
 
-// Spacing — populated by /design-tokens
-
-// Border Radius — populated by /design-tokens
-
-// Shadows — populated by /design-tokens
+// Border Radius
+export const radius = {
+  full: "24px",
+} as const;

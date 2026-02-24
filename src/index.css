@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /*
@@ -6,13 +7,38 @@
  * Do not edit manually — re-run the skill to update.
  */
 @theme {
-  /* Colors — populated by /design-tokens */
+  /* Colors */
+  --color-primary: #0056b1;
+  --color-primary-light: #eef4fb;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-neutral-100: #f8f8f9;
+  --color-neutral-200: #f1f1f1;
+  --color-neutral-300: #dcdcdc;
+  --color-neutral-400: #c7c7c7;
+  --color-neutral-500: #a6a5a5;
+  --color-neutral-600: #858585;
+  --color-neutral-700: #5c5c5c;
+  --color-neutral-800: #212222;
+  --color-success: #217b2c;
+  --color-success-bg: #eafbec;
+  --color-danger: #cb0101;
 
-  /* Typography — populated by /design-tokens */
+  /* Font Family */
+  --font-sans: "Montserrat", sans-serif;
 
-  /* Spacing — populated by /design-tokens */
+  /* Font Sizes (with compound line-heights) */
+  --text-h3: 24px;
+  --text-h3--line-height: 48px;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 24px;
+  --text-body-xs: 12px;
+  --text-body-xs--line-height: 16px;
+  --text-body-xs-tall: 12px;
+  --text-body-xs-tall--line-height: 20px;
 
-  /* Border Radius — populated by /design-tokens */
-
-  /* Shadows — populated by /design-tokens */
+  /* Border Radius */
+  --radius-full: 24px;
 }

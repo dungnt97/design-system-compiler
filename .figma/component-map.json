@@ -1,0 +1,68 @@
+{
+  "figmaFile": "VexBMENbhnWBOVwIqUGg1D",
+  "page": "Sign up",
+  "pageNodeId": "328:2001",
+  "frameDimensions": { "width": 375, "height": 812 },
+  "components": {
+    "Logo": {
+      "nodeId": "328:2005",
+      "masterNodeId": "111:2923",
+      "category": "ui",
+      "description": "App logo with SVG graphic and text 'IOT Detect Old Person'",
+      "complexSvg": true,
+      "dependencies": []
+    },
+    "Title": {
+      "nodeId": "267:2758",
+      "category": "ui",
+      "description": "Heading + subtitle text block",
+      "props": {
+        "heading": "string",
+        "accordingText": "string"
+      },
+      "dependencies": []
+    },
+    "Input": {
+      "nodeId": "119:3643",
+      "category": "ui",
+      "description": "Text input field with label, placeholder, helper text, and optional icons",
+      "props": {
+        "placeholder": "string",
+        "label": "string",
+        "helperText": "string",
+        "showLabelText": "boolean",
+        "showHelperText": "boolean",
+        "showIconLeft": "boolean",
+        "showIconRight": "boolean"
+      },
+      "dependencies": []
+    },
+    "Button": {
+      "nodeId": "328:2013",
+      "category": "ui",
+      "description": "Primary action button",
+      "props": {
+        "label": "string"
+      },
+      "dependencies": []
+    },
+    "HelperActionText": {
+      "nodeId": "371:1635",
+      "category": "ui",
+      "description": "Helper text with an action link (e.g., 'Have an account? Login')",
+      "props": {
+        "text": "string",
+        "actionText": "string"
+      },
+      "dependencies": []
+    }
+  },
+  "generationOrder": ["Logo", "Title", "Input", "Button", "HelperActionText"],
+  "pages": [
+    {
+      "name": "SignUp",
+      "nodeId": "328:2001",
+      "dimensions": { "width": 375, "height": 812 }
+    }
+  ]
+}

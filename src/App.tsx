@@ -1,7 +1,9 @@
+import { SignUp } from "@/pages/SignUp";
+
 export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-semibold">Design System</h1>
+    <div className="flex min-h-screen items-center justify-center bg-[#e5e5e5]">
+      <SignUp />
     </div>
   );
 }
