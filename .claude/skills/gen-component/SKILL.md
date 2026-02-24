@@ -88,7 +88,11 @@ Figma MCP decomposes complex vector graphics (logos, illustrations, decorative i
    - `mt-[Y%]` → `y = Y% × grid-cell-width` (CSS % margins resolve relative to inline-size/width)
    - `-scale-y-100` → `transform="translate(0, viewBox-height) scale(1, -1)"` (vertical flip)
 6. Save as a single file: `public/assets/{component-name}.svg`
-7. Delete the individual part files
+7. **MANDATORY CLEANUP — Delete ALL individual part files immediately:**
+   ```bash
+   rm public/assets/{component-name}-mask-*.svg public/assets/{component-name}-fill-*.svg
+   ```
+   Verify with `ls public/assets/` that ONLY the combined file remains. Do NOT proceed to component generation until individual parts are deleted.
 
 **The component then becomes a simple `<img>` wrapper:**
 

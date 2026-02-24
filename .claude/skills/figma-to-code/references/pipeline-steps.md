@@ -271,8 +271,9 @@ Figma MCP decomposes complex vector graphics (logos, illustrations) into many in
 3. Combine all gradient-fill paths into **1 single SVG file** using nested `<svg>` elements for positioning
 4. Calculate positions from CSS margin percentages: `ml-[X%]` → `x = X% × cell-width`
 5. Apply vertical flip: `transform="translate(0, viewBox-height) scale(1, -1)"`
-6. Save as `public/assets/{name}.svg`, delete individual parts
-7. Component becomes a simple `<img src="/assets/{name}.svg" />` wrapper
+6. Save as `public/assets/{name}.svg`
+7. **MANDATORY: `rm public/assets/{name}-mask-*.svg public/assets/{name}-fill-*.svg`** — delete ALL individual part files immediately, then verify with `ls` that only the combined file remains
+8. Component becomes a simple `<img src="/assets/{name}.svg" />` wrapper
 
 See `gen-component/SKILL.md` → "Complex SVG Components → Single Asset File" for full procedure.
 
